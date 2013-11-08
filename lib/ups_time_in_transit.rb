@@ -9,7 +9,7 @@ module UPS
   # Provides a simple api to to ups's time in transit service.
   class TimeInTransit
     XPCI_VERSION = '1.0002'
-    DEFAULT_CUTOFF_TIME = 14
+    DEFAULT_CUTOFF_TIME = 18
     DEFAULT_TIMEOUT = 30
     DEFAULT_RETRY_COUNT = 3
     DEFAULT_COUNTRY_CODE = 'US'
@@ -146,6 +146,7 @@ module UPS
       day_of_week = now.strftime('%w').to_i
       in_weekend = [6,0].include?(day_of_week)
       in_friday_after_cutoff = day_of_week == 5 and now.hour > @order_cutoff_time
+      # Rails.logger.debug "Time now is: #{now}\nOrder cutoff time is: #{@order_cutoff_time}\n"
 
       # If we're in a weekend (6 is Sat, 0 is Sun,) or we're in Friday after
       # the cutoff time, then our ship date will move
@@ -155,10 +156,13 @@ module UPS
       # if we're in another weekday but after the cutoff time, our ship date
       # moves to tomorrow
       elsif(now.hour > @order_cutoff_time)
+	      # Rails.logger.debug "\nSetting the time in transit to tomorrow #{now.tomorrow}, since now.hour > @order_cutoff_time = #{now.hour > @order_cutoff_time}\n"
         pickup_date = now.tomorrow
       else
         pickup_date = now
       end
+      # Rails.logger.debug "UPS pickup_date is: #{pickup_date} and the time now is #{now}"
+      return pickup_date
     end
 
     # Builds a hash of transit request attributes based on the given values
@@ -217,6 +221,7 @@ module UPS
 
     # Posts the given data to the given url, returning the raw response
     def send_request(url, data)
+      # Rails.logger.debug "Sending the following data in a request to UPS time in transit API:\n#{data}\n"
       uri = URI.parse(url)
       http = Net::HTTP.new(uri.host, uri.port)
       if uri.port == 443
@@ -230,6 +235,7 @@ module UPS
     # converts the given raw xml response to a map of local service codes
     # to estimated delivery dates
     def response_to_map(response) 
+      # Rails.logger.debug "Received the following data in a response from UPS time in transit API:\n#{response}\n"
       response_doc = REXML::Document.new(response)
       response_code = response_doc.elements['//ResponseStatusCode'].text.to_i
       raise "Invalid response from ups:\n#{response_doc.to_s}" if(!response_code || response_code != 1)
@@ -238,10 +244,11 @@ module UPS
       response_code = response_doc.elements.each('//ServiceSummary') do |service_element|
         service_code = service_element.elements['Service/Code'].text
         if(service_code)
-          date_string = service_element.elements['EstimatedArrival/Date'].text
-          time_string = service_element.elements['EstimatedArrival/Time'].text
+          date_string     = service_element.elements['EstimatedArrival/Date'].text
+          time_string     = service_element.elements['EstimatedArrival/Time'].text
+	        days_in_transit  = service_element.elements['EstimatedArrival/BusinessTransitDays'].text.to_i
           delivery_date = Time.parse("#{date_string} #{time_string}")
-          service_codes_to_delivery_dates[service_code] = delivery_date
+          service_codes_to_delivery_dates[service_code] = {:delivery_date => delivery_date, :days_in_transit => days_in_transit}
         end
       end
       service_codes_to_delivery_dates
