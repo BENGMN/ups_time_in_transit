@@ -2,13 +2,13 @@
 
 Gem::Specification.new do |s|
   s.name = %q{ups_time_in_transit_plus}
-  s.version = "0.1.4"
+  s.version = "0.1.5"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2") if s.respond_to? :required_rubygems_version=
   s.authors = ["Joe Stelmach, Benjamin Crudo"]
   # s.cert_chain = ["/Users/joe/workspace/personal/gem-public_cert.pem"]
   s.date = %q{2013-10-07}
-  s.description = %q{Provides an easy to use interface to the UPS time in transit API}
+  s.description = %q{Provides an easy to use interface to the UPS time in transit API. See change log in README}
   s.email = %q{gems @nospam@ gmail.com}
   s.extra_rdoc_files = ["LICENSE", "README", "lib/ups_time_in_transit_plus.rb"]
   s.files = ["LICENSE", "Manifest", "README", "Rakefile", "lib/ups_time_in_transit_plus.rb", "ups_time_in_transit_plus.gemspec"]
